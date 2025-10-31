@@ -1,0 +1,36 @@
+---
+- name: Deploy WordPress + MySQL via Docker Compose
+  hosts: docker_hosts
+  become: true
+
+  vars:
+    compose_file: ../files/docker-compose.yml
+    deploy_dir: /home/sofia/wordpress_stack
+
+  tasks:
+    - name: Ensure deployment directory exists
+      file:
+        path: "{{ deploy_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copy docker-compose.yml to remote host
+      copy:
+        src: "{{ compose_file }}"
+        dest: "{{ deploy_dir }}/docker-compose.yml"
+        owner: sofia
+        group: sofia
+        mode: '0644'
+
+    - name: Launch Docker Compose application
+      command: docker compose up -d
+      args:
+        chdir: "{{ deploy_dir }}"
+
+    - name: Show running containers
+      command: docker ps
+      register: docker_ps
+
+    - name: Print running containers
+      debug:
+        var: docker_ps.stdout_lines

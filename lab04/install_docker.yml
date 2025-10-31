@@ -1,0 +1,55 @@
+---
+- name: Install Docker and Docker Compose
+  hosts: docker_hosts
+  become: true
+
+  tasks:
+    - name: Install prerequisites
+      apt:
+        name: 
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: yes
+
+    - name: Add Docker GPG key
+      ansible.builtin.shell: |
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+      args:
+        creates: /usr/share/keyrings/docker-archive-keyring.gpg
+
+    - name: Add Docker repository (Ubuntu 24.04 / jammy)
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu jammy stable"
+        state: present
+        update_cache: yes
+
+    - name: Install Docker packages
+      apt:
+        name: 
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+
+    - name: Add user to docker group
+      user:
+        name: sofia
+        groups: docker
+        append: yes
+
+    - name: Ensure Docker service is running
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Install Docker Compose plugin
+      ansible.builtin.shell: |
+        apt-get install docker-compose-plugin -y
+      args:
+        creates: /usr/libexec/docker/cli-plugins/docker-compose
